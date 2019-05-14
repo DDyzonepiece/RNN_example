@@ -28,7 +28,7 @@ def generate_data(seq):
         X.append([seq[i:i+TIMESTEPS]])
         Y.append([i+TIMESTEPS])
 
-    return np.array(X,dtype=np.float32),np.array(y,dtype=np.float32)
+    return np.array(X,dtype=np.float32),np.array(Y,dtype=np.float32)
 
 def lstm_model(X,y,is_training):
 
@@ -55,7 +55,7 @@ def lstm_model(X,y,is_training):
 
 def train(sess,train_X,train_Y):
 
-    ds=tf.data.Dataset.from_tesor_slice((train_X,train_Y))
+    ds=tf.data.Dataset.from_tensor_slices((train_X,train_Y))
 
     ds=ds.repeat().shuffle(1000).batch(BATCH_SIZE)
 
@@ -65,9 +65,48 @@ def train(sess,train_X,train_Y):
         prediction,_,_=lstm_model(X,[0.0],False)
 
     sess.run(tf.global_variables_initializer())
-    for i in range(TRAINING_STEPS)
-        _,1=sess.run([train_op,loss])
+    for i in range(TRAINING_STEPS):
+        _,l=sess.run([train_op,loss])
         if i %100==0:
             print('train step:'+str(i)+',loss:'+str(1))
 
-def run_eval(sess,test_X,test_Y)
+def run_eval(sess,test_X,test_Y):
+    ds=tf.data.Dataset.from_tensor_slices((test_X,test_Y))
+
+    ds=ds.batch(l)
+    X,Y=ds.make_one_shot_iterator().get_next()
+
+    with tf.variable_scope("model",reuse=True):
+        prediction,_,_=lstm_model(X,[0.0],False)
+
+    predictions=[]
+    labels=[]
+    for i in range(TESTING_EXAMPLES):
+        p,l=sess.run([prediction,Y])
+
+        predictions.append(p)
+        labels.append(l)
+
+    predictions=np.array(predictions).squeeze()
+
+    labels=np.array(labels).squeeze()
+    rmse=np.sqrt(((predictions-labels)**2).mean(axis=0))
+    print("Mean Square Error is: %f" %rmse)
+
+    plt.figure()
+    plt.plot(predictions,label='predictions')
+    plt.plot(labels,label='real_sin')
+    plt.legend()
+    plt.show()
+
+test_start=(TRAINING_EXAMPLES+TIMESTEPS)*SAMPLE_GAP
+test_end=test_start+(TESTING_EXAMPLES+TIMESTEPS)*SAMPLE_GAP
+
+train_X,train_Y=generate_data(np.sin(np.linspace(0,test_start,TRAINING_EXAMPLES+TIMESTEPS,dtype=np.float32)))
+test_X,test_Y=generate_data(np.sin(np.linspace(test_start,test_end,TESTING_EXAMPLES+TIMESTEPS,dtype=np.float32)))
+
+with tf.Session() as sess:
+    train(sess,train_X,train_Y)
+
+    run_eval(sess,test_X,test_Y)
+
