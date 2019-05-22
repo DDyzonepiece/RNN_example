@@ -114,6 +114,5 @@ with tf.Session() as sess:
             print("train step: " + str(i) + ", loss: " + str(l))
 
     # 使用训练好的模型对测试数据进行预测。
-    print
-    "Evaluate model after training."
+    print("Evaluate model after training.")
     run_eval(sess, test_X, test_y)
